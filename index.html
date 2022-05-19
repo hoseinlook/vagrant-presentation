@@ -1,0 +1,352 @@
+<!doctype html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="author" content="Mohammad Hosein Lookzadeh">
+
+	<title>Vagrant</title>
+
+	<link rel="stylesheet" href="css/reveal.css">
+	<link rel="stylesheet" href="css/theme/sky.css">
+
+	<!-- Theme used for syntax highlighting of code -->
+	<link rel="stylesheet" href="lib/css/zenburn.css">
+
+	<!-- Printing and PDF exports -->
+	<script>
+		var link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.type = 'text/css';
+		link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
+		document.getElementsByTagName('head')[0].appendChild(link);
+	</script>
+</head>
+
+<body>
+	<div class="reveal">
+		<div class="slides">
+
+			<section>
+				<h1>Vagrant</h1>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
+					## What is Vagrant
+					* System for creation and management of VMs
+					* Wrapper for Hypervisors: VBox, VMware, Docker, AWS, KVM, etc.
+					* Works on Windows, Linux, Mac OS X
+				</textarea>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
+					## Why Vagrant
+					* provides easy to configure, reproducible, and portable work environments
+					* lowers development environment setup time
+					* increases production parity
+					* consistent interface for usage
+					* Target groups: developers, operators
+				</textarea>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
+					## About Vagrant
+					* open source
+					* Only CLI
+					* [www.vagrantup.com](https://www.vagrantup.com)
+					* current version: 2.0.2 (2018/01/19)
+					* first release: 2010
+					* maintained by HashiCorp
+					* VMware plugin is commercial
+				</textarea>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
+					## All you need is
+					* Vagrant
+					* VirtualBox
+					* Internet connection
+					* a `Vagrantfile`
+				</textarea>
+			</section>
+
+			<!-- Example -->
+			<section>
+				<section data-markdown>
+					<textarea data-template>
+						## Minimal example
+
+						* Create a Vagrantfile
+						* Startup
+						* Login via SSH
+						* Shutdown
+						* Destroy
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Create a Vagrantfile
+
+						```bash
+						$ vagrant init ubuntu/xenial64
+
+						A `Vagrantfile` has been placed in this directory. You are now
+						ready to `vagrant up` your first virtual environment! Please read
+						the comments in the Vagrantfile as well as documentation on
+						`vagrantup.com` for more information on using Vagrant.
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Vagrantfile
+
+						Minimum viable Vagrantfile
+
+						```ruby
+						Vagrant.configure("2") do |config|
+							config.vm.box = "ubuntu/xenial64"
+							# ... plus lots of comments
+						end
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Lifecycle
+
+						```bash
+						$ vagrant up
+						# downloads and caches the base box
+						# starts and provisions the vagrant environment
+
+						$ vagrant ssh
+						# connects to machine via SSH
+						# VM is connected via NAT to the network
+						# SSH port of VM is forwarded to port of host
+
+						$ vagrant halt
+						# stops the vagrant machine
+						
+						$ vagrant destroy
+						# stops and deletes all traces of the vagrant machine
+						```
+					</textarea>
+				</section>				
+			</section>
+
+			<!-- Features -->
+			<section>
+				<section data-markdown>
+					<textarea data-template>
+						## VM customization
+						
+						```ruby
+						Vagrant.configure("2") do |config|
+							
+							config.vm.provider "virtualbox" do |vb|
+								# Name in VirtualBox GUI
+								vb.name = "elastic"
+								# Customize the amount of memory on the VM
+								vb.memory = "2048"
+								# Customize CPUs
+								vb.cpus = 2
+								# Enable host's resolver as a DNS proxy in NAT mode
+								vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+							end
+							
+						end
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Networking
+
+						```ruby
+						Vagrant.configure("2") do |config|
+							
+							config.vm.hostname = "elastic"
+							config.vm.network "forwarded_port", guest: 80, host: 80
+							config.vm.network "private_network", ip: "192.168.56.10"
+							
+						end
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Synced folders
+						
+						* VirtualBox shared folders
+						* RSync, SMB, NFS
+						* Folder of Vagrantfile synced to `/vagrant`
+
+						```ruby
+						Vagrant.configure("2") do |config|
+							
+							config.vm.synced_folder "src/", "/srv/website"
+							
+						end
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Provisioners
+
+						```ruby
+						Vagrant.configure("2") do |config|
+							
+							config.vm.provision "m2_settings", type: "file", \
+								source: "~/.m2/settings.xml", \
+								destination: "/home/vagrant/.m2/settings.xml"
+
+							config.vm.provision "script", type: "shell", path: "myscript.sh"
+						end
+						```
+
+						```bash
+						# Execute provisioners again
+						$ vagrant provision
+						$ vagrant provision --provision-with m2_settings
+						
+						# Start without provisioners
+						$ vagrant up --no-provision
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Ansible provisioner
+						* executed from host
+						* executed from VM (ansible_local)
+						* Auto-Generated Inventory
+
+						```ruby
+						Vagrant.configure("2") do |config|
+							
+							config.vm.provision "ansible_local" do |ansible|
+								ansible.install = true
+								ansible.verbose = true
+								ansible.playbook = "helloworld.yml"
+							end
+
+						end
+						```
+					</textarea>
+				</section>
+			</section>
+			
+			<!-- Boxes -->
+			<section>
+				<section data-markdown>
+					<textarea data-template>
+						## Boxes
+						* Box catalog online
+							* https://app.vagrantup.com/boxes/search
+							* ubuntu/*
+							* centos/*
+							* generic/*
+						* for the advanced: DIY using
+							* Vagrant
+							* Packer
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						## Managing boxes
+
+						```bash
+						$ vagrant box list
+						# Lists all cached boxes
+
+						$ vagrant box add $BOX_URL
+						# Adds a box from file or URL
+
+						$ vagrant box update $BOX_NAME
+						# Update box
+
+						$ vagrant box remove $BOX_NAME
+						# Deletes the base box (but not derived VMs)
+						```
+					</textarea>
+				</section>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
+					## Advanced features
+					* Multi-VM environments
+
+					* Customization using ruby code
+				</textarea>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
+					## Tool support
+					* VSCode Plugins
+					* Vagrant Maven plugin
+				</textarea>
+			</section>
+
+			<section data-markdown>
+				<textarea data-template>
+					# The end.
+					</textarea>
+			</section>
+		</div>
+	</div>
+
+	<!-- Script loading library, needed to load plugins -->
+	<script src="lib/js/head.min.js"></script>
+	<script src="js/reveal.js"></script>
+
+	<script>
+		// More info about config & dependencies:
+		// - https://github.com/hakimel/reveal.js#configuration
+		// - https://github.com/hakimel/reveal.js#dependencies
+		Reveal.initialize({
+			// Display the page number of the current slide
+			slideNumber: true,
+			showSlideNumber: 'speaker',
+
+			// Push each slide change to the browser history
+			history: true,
+
+			// Transition style
+			transition: 'convex', // none/fade/slide/convex/concave/zoom
+
+			dependencies: [
+				// Cross-browser shim that fully implements classList - https://github.com/eligrey/classList.js/
+				{ src: 'lib/js/classList.js', condition: function () { return !document.body.classList; } },
+
+				// Interpret Markdown in <section> elements
+				{ src: 'plugin/markdown/marked.js' },
+				{ src: 'plugin/markdown/markdown.js' },
+
+				// Speaker notes
+				{ src: 'plugin/notes/notes.js', async: true },
+
+				// Syntax highlight for <code> elements
+				{ src: 'plugin/highlight/highlight.js', async: true, callback: function () { hljs.initHighlightingOnLoad(); } }
+			]
+		});
+	</script>
+</body>
+
+</html>
